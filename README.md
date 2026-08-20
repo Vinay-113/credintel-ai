@@ -1,8 +1,12 @@
 # CredIntel AI
 
+[![CI](https://github.com/Vinay-113/credintel-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/Vinay-113/credintel-ai/actions/workflows/ci.yml)
+
 Explainable, real-time underwriting for new-to-credit applicants. CredIntel combines consented alternative-data signals, an interpretable repayment model, fraud controls, policy rules, and human review in one auditable decision record.
 
 > Prototype boundary: this project demonstrates engineering architecture and responsible-AI controls. It is not validated for real lending decisions and must not be used to approve or deny actual credit.
+
+![CredIntel AI underwriting workspace](docs/assets/app-decision.png)
 
 ## Why this solution stands out
 
@@ -53,7 +57,7 @@ Requirements: Java 21+ and Maven 3.9+
 
 ```bash
 cd backend
-mvn spring-boot:run
+./mvnw spring-boot:run
 ```
 
 The default profile uses an in-memory H2 database in PostgreSQL compatibility mode. The health endpoint is `http://localhost:8080/actuator/health`.
@@ -101,7 +105,7 @@ See [`docs/data-sources.md`](docs/data-sources.md) and [`docs/model-card.md`](do
 
 ```bash
 npm test
-cd backend && mvn test
+cd backend && ./mvnw test
 ```
 
 Coverage focuses on the highest-risk behavior: consent, model output, fraud escalation, policy review, payload validation, server rendering, and model metadata.
@@ -132,17 +136,19 @@ submission/   Final roll-number-named delivery files
 
 ## Demo flow
 
+**[Watch or download the 59-second narrated product demo](docs/demo/credintel-demo.mp4)**
+
 1. Show the strong profile and open the feature-level explanation.
 2. Run the borderline preset to demonstrate a model-positive case routed to human review by the DTI policy.
 3. Run the fraud preset to show that a plausible income profile is still stopped by identity/device risk.
 4. Open model monitoring and call out AUC, fairness gap, drift, and model ownership.
 5. Open the audit trail and finish with the LLM decision boundary.
 
-The submitted 59-second narration is in [`docs/demo-narration.txt`](docs/demo-narration.txt). A longer three-minute interview script is in [`docs/demo-script.md`](docs/demo-script.md).
+The recording narration is in [`docs/demo-narration.txt`](docs/demo-narration.txt). A longer three-minute interview script is in [`docs/demo-script.md`](docs/demo-script.md).
 
 ## Build the submission ZIP
 
-The checked-in artifacts use `ROLL_NUMBER` until the candidate number is known. Repackage everything with the exact roll number using:
+The locally generated artifacts use `ROLL_NUMBER` until the candidate number is known. Repackage everything with the exact roll number using:
 
 ```bash
 ./scripts/package_submission.sh YOURROLLNUMBER

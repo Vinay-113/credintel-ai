@@ -265,7 +265,7 @@ export function UnderwritingWorkspace() {
           ))}
         </nav>
         <div className="sidebar-context">
-          <p>MODEL IN PRODUCTION</p>
+          <p>ACTIVE DEMO MODEL</p>
           <strong>credit-logit-1.0.0</strong>
           <span><span className="status-dot" /> All services healthy</span>
         </div>
