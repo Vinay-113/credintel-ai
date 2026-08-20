@@ -1,9 +1,0 @@
-spring:
-  datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/credintel}
-    username: ${DATABASE_USER:credintel}
-    password: ${DATABASE_PASSWORD}
-  jpa:
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
