@@ -1,0 +1,24 @@
+{
+  "applicant": {
+    "externalId": "NTC-0842",
+    "fullName": "Aarav Mehta",
+    "age": 27,
+    "monthlyIncome": 32500,
+    "loanAmount": 85000,
+    "loanTenureMonths": 12,
+    "purpose": "Work equipment",
+    "consentGranted": true
+  },
+  "signals": {
+    "incomeStabilityMonths": 18,
+    "utilityOnTimeRatio": 0.96,
+    "cashflowVolatility": 0.24,
+    "debtToIncomeRatio": 0.42,
+    "mobileAccountTenureMonths": 30,
+    "averageMonthlyBalance": 8800,
+    "deviceTrustScore": 0.92,
+    "identityConsistencyScore": 0.96,
+    "recentFailedLogins": 0,
+    "locationConsistencyScore": 0.94
+  }
+}

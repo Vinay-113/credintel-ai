@@ -1,0 +1,13 @@
+CredIntel AI is an explainable underwriting workspace for new-to-credit applicants. It combines consented alternative data with separate repayment, fraud, and policy controls.
+
+The first scenario is approved. The analyst sees the recommendation, credit confidence, fraud risk, decision latency, and the strongest reason codes in one reviewable record.
+
+Opening the explanation reveals the exact feature contributions and policy checks. The language model can summarize this evidence, but it cannot change the score or recommendation.
+
+A borderline affordability signal routes the next application to human review, even with strong repayment evidence.
+
+In the fraud scenario, low device trust, identity inconsistency, location changes, and failed logins drive a decline. The displayed reasons stay faithful to that decision.
+
+The review queue prioritizes cases for analysts. Model monitoring exposes validation, drift, fairness, and governance status. Finally, the audit trail records each data, model, policy, and human event.
+
+CredIntel demonstrates a working path from responsible credit expansion to a controlled production pilot.

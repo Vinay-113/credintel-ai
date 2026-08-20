@@ -1,0 +1,25 @@
+flowchart LR
+    subgraph Client["Experience layer"]
+      U["Underwriter"] --> R["React workspace"]
+    end
+    subgraph Services["Decision layer"]
+      R --> A["Spring Boot API"]
+      A --> V["Validation + consent"]
+      V --> C["Credit scorecard"]
+      V --> F["Fraud engine"]
+      C --> P["Policy orchestrator"]
+      F --> P
+      P --> E["Reason-code engine"]
+      E --> H["Human decision"]
+    end
+    subgraph Data["Data and AI layer"]
+      A --> DB[("PostgreSQL")]
+      DB --> PV[("pgvector policy index")]
+      E --> N["Narrative provider"]
+      N -. optional .-> BR["AWS Bedrock"]
+    end
+    subgraph Platform["Cloud controls"]
+      S["Secrets Manager"] --> A
+      O["CloudWatch / alarms"] <-->|"metrics + logs"| A
+      I["Cognito / API key"] --> A
+    end

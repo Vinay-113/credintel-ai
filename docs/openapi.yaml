@@ -1,0 +1,151 @@
+openapi: 3.1.0
+info:
+  title: CredIntel Underwriting API
+  version: 1.0.0
+  description: Explainable credit and fraud assessment for consented new-to-credit applications.
+servers:
+  - url: http://localhost:8080/api/v1
+security:
+  - ApiKey: []
+paths:
+  /decisions:
+    post:
+      operationId: assessApplication
+      summary: Assess a consented credit application
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssessmentRequest'
+      responses:
+        '201':
+          description: Explainable decision record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Decision'
+        '400':
+          description: Invalid or incomplete input
+        '401':
+          description: Missing or invalid API key when production authentication is enabled
+    get:
+      operationId: listDecisions
+      summary: List the 20 most recent decisions
+      responses:
+        '200':
+          description: Recent decision records
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  decisions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Decision'
+  /decisions/{id}:
+    get:
+      operationId: getDecision
+      summary: Retrieve one immutable decision record
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Decision record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Decision'
+        '404':
+          description: Decision not found
+  /model:
+    get:
+      operationId: getModelMetadata
+      summary: Retrieve deployed model governance metadata
+      responses:
+        '200':
+          description: Model metadata and protected-trait exclusions
+components:
+  securitySchemes:
+    ApiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: Optional in local demo mode; set APP_API_KEY to enforce it.
+  schemas:
+    AssessmentRequest:
+      type: object
+      required: [applicant, signals]
+      properties:
+        applicant:
+          $ref: '#/components/schemas/Applicant'
+        signals:
+          $ref: '#/components/schemas/Signals'
+    Applicant:
+      type: object
+      required: [externalId, fullName, age, monthlyIncome, loanAmount, loanTenureMonths, purpose, consentGranted]
+      properties:
+        externalId: { type: string, maxLength: 64 }
+        fullName: { type: string, maxLength: 120 }
+        age: { type: integer, minimum: 18, maximum: 80 }
+        monthlyIncome: { type: number, exclusiveMinimum: 0 }
+        loanAmount: { type: number, exclusiveMinimum: 0 }
+        loanTenureMonths: { type: integer, minimum: 3, maximum: 60 }
+        purpose: { type: string, maxLength: 120 }
+        consentGranted: { type: boolean }
+    Signals:
+      type: object
+      required: [incomeStabilityMonths, utilityOnTimeRatio, cashflowVolatility, debtToIncomeRatio, mobileAccountTenureMonths, averageMonthlyBalance, deviceTrustScore, identityConsistencyScore, recentFailedLogins, locationConsistencyScore]
+      properties:
+        incomeStabilityMonths: { type: integer, minimum: 0, maximum: 120 }
+        utilityOnTimeRatio: { type: number, minimum: 0, maximum: 1 }
+        cashflowVolatility: { type: number, minimum: 0, maximum: 1 }
+        debtToIncomeRatio: { type: number, minimum: 0, maximum: 1 }
+        mobileAccountTenureMonths: { type: integer, minimum: 0, maximum: 240 }
+        averageMonthlyBalance: { type: number, minimum: 0 }
+        deviceTrustScore: { type: number, minimum: 0, maximum: 1 }
+        identityConsistencyScore: { type: number, minimum: 0, maximum: 1 }
+        recentFailedLogins: { type: integer, minimum: 0, maximum: 100 }
+        locationConsistencyScore: { type: number, minimum: 0, maximum: 1 }
+    ReasonCode:
+      type: object
+      properties:
+        code: { type: string }
+        label: { type: string }
+        impact: { type: integer }
+        direction: { type: string, enum: [POSITIVE, NEGATIVE] }
+        evidence: { type: string }
+    PolicyCheck:
+      type: object
+      properties:
+        code: { type: string }
+        label: { type: string }
+        status: { type: string, enum: [PASS, REVIEW, FAIL] }
+        detail: { type: string }
+    Decision:
+      type: object
+      required: [decisionId, createdAt, recommendation, creditConfidence, fraudRisk, reasonCodes, policyChecks, modelVersion]
+      properties:
+        decisionId: { type: string }
+        createdAt: { type: string, format: date-time }
+        recommendation: { type: string, enum: [APPROVE, REVIEW, DECLINE] }
+        creditConfidence: { type: integer, minimum: 0, maximum: 100 }
+        probabilityOfRepayment: { type: number, minimum: 0, maximum: 1 }
+        fraudRisk: { type: integer, minimum: 0, maximum: 100 }
+        reasonCodes:
+          type: array
+          items: { $ref: '#/components/schemas/ReasonCode' }
+        policyChecks:
+          type: array
+          items: { $ref: '#/components/schemas/PolicyCheck' }
+        summary: { type: string }
+        modelVersion: { type: string }
+        processingTimeMs: { type: integer }
+        humanReviewRequired: { type: boolean }
+        applicant: { $ref: '#/components/schemas/Applicant' }
+        signals: { $ref: '#/components/schemas/Signals' }

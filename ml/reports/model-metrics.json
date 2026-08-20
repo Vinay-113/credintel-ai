@@ -1,0 +1,23 @@
+{
+  "modelVersion": "credit-logit-1.0.0",
+  "metrics": {
+    "rocAuc": 0.8344,
+    "precision": 0.5959,
+    "recall": 0.6008,
+    "accuracy": 0.806,
+    "equalOpportunityGap": 0.0166,
+    "confusionMatrix": {
+      "truePositive": 289,
+      "trueNegative": 1323,
+      "falsePositive": 196,
+      "falseNegative": 192
+    },
+    "threshold": 0.35
+  },
+  "fairnessNote": "Evaluation groups are synthetic and are used only to exercise the governance workflow.",
+  "limitations": [
+    "Synthetic validation is not evidence of real-world lending performance.",
+    "Thresholds require validation on representative, consented production data.",
+    "A human must review adverse and borderline outcomes."
+  ]
+}

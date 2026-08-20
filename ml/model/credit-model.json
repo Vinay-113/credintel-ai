@@ -1,0 +1,64 @@
+{
+  "modelVersion": "credit-logit-1.0.0",
+  "modelType": "regularized_logistic_regression",
+  "intercept": -17.79027705,
+  "features": [
+    {
+      "name": "income_stability",
+      "weight": 2.73182916
+    },
+    {
+      "name": "utility_history",
+      "weight": 3.94711259
+    },
+    {
+      "name": "cashflow_stability",
+      "weight": 2.86473624
+    },
+    {
+      "name": "affordability",
+      "weight": 3.4636072
+    },
+    {
+      "name": "mobile_tenure",
+      "weight": 1.3105938
+    },
+    {
+      "name": "balance_buffer",
+      "weight": 1.01492409
+    },
+    {
+      "name": "device_trust",
+      "weight": 1.84063492
+    },
+    {
+      "name": "identity_match",
+      "weight": 2.55501683
+    },
+    {
+      "name": "access_behavior",
+      "weight": 1.01464031
+    },
+    {
+      "name": "location_stability",
+      "weight": 1.41801694
+    },
+    {
+      "name": "loan_scale",
+      "weight": 1.74579724
+    }
+  ],
+  "thresholds": {
+    "approve": 0.74,
+    "review": 0.47,
+    "fraudReview": 0.35,
+    "fraudDecline": 0.65
+  },
+  "training": {
+    "dataset": "deterministic synthetic profiles",
+    "trainRows": 6000,
+    "validationRows": 2000,
+    "seed": 20260820,
+    "protectedTraitsUsedForTraining": false
+  }
+}

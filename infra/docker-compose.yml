@@ -1,0 +1,56 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: credintel
+      POSTGRES_USER: credintel
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-credintel-local-only}
+    ports:
+      - "5432:5432"
+    volumes:
+      - credintel-postgres:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U credintel -d credintel"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  api:
+    build:
+      context: ../backend
+    environment:
+      SPRING_PROFILES_ACTIVE: postgres
+      DATABASE_URL: jdbc:postgresql://postgres:5432/credintel
+      DATABASE_USER: credintel
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-credintel-local-only}
+      APP_API_KEY: ${APP_API_KEY:-}
+      ALLOWED_ORIGINS: http://localhost:3000
+      AI_PROVIDER: ${AI_PROVIDER:-template}
+      AWS_REGION: ${AWS_REGION:-ap-south-1}
+      BEDROCK_MODEL_ID: ${BEDROCK_MODEL_ID:-}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      interval: 8s
+      timeout: 4s
+      retries: 12
+
+  web:
+    build:
+      context: ..
+    environment:
+      BACKEND_URL: http://api:8080/api/v1
+      APP_API_KEY: ${APP_API_KEY:-}
+    ports:
+      - "3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  credintel-postgres:
