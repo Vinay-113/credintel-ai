@@ -2,8 +2,8 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-ROLL_NUMBER="${1:-ROLL_NUMBER}"
-SOURCE_PREFIX="$ROOT/submission/ROLL_NUMBER"
+ROLL_NUMBER="${1:-SE23UCSE186}"
+SOURCE_PREFIX="$ROOT/submission/$ROLL_NUMBER"
 STAGE_ROOT="$ROOT/tmp/submission-package"
 STAGE="$STAGE_ROOT/$ROLL_NUMBER"
 OUT="$ROOT/submission/$ROLL_NUMBER.zip"
@@ -28,6 +28,7 @@ rsync -a --delete \
   --exclude '.vinext/' \
   --exclude '.wrangler/' \
   --exclude 'dist/' \
+  --exclude 'demo-dist/' \
   --exclude 'node_modules/' \
   --exclude 'backend/target/' \
   --exclude 'tmp/' \

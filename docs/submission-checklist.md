@@ -1,6 +1,6 @@
 # Submission checklist
 
-- [ ] Replace `ROLL_NUMBER` in final filenames with the exact student roll number.
+- [x] Name every final submission artifact with roll number `SE23UCSE186`.
 - [ ] Open the PPTX and PDF once on the presentation laptop.
 - [ ] Review the narrated 1280x720 demo video and confirm text and audio are clear.
 - [ ] Confirm the ZIP contains the deck/PDF, demo video, source code, and README.

@@ -2,10 +2,16 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ROLL_NUMBER="${1:-SE23UCSE186}"
 FFMPEG="$ROOT/tmp/video-tool/node_modules/ffmpeg-static/ffmpeg"
 WORK="$ROOT/tmp/demo/video"
-OUT="$ROOT/submission/ROLL_NUMBER.mp4"
+OUT="$ROOT/submission/$ROLL_NUMBER.mp4"
 FONT="/System/Library/Fonts/Supplemental/Arial.ttf"
+
+if [[ ! "$ROLL_NUMBER" =~ ^[A-Za-z0-9_-]+$ ]]; then
+  echo "Roll number may contain only letters, numbers, underscore, or hyphen." >&2
+  exit 1
+fi
 
 mkdir -p "$WORK" "$ROOT/submission"
 

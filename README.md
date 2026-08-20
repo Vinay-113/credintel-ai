@@ -150,10 +150,10 @@ The recording narration is in [`docs/demo-narration.txt`](docs/demo-narration.tx
 
 ## Build the submission ZIP
 
-The locally generated artifacts use `ROLL_NUMBER` until the candidate number is known. Repackage everything with the exact roll number using:
+The final artifacts are named with candidate roll number `SE23UCSE186`. Rebuild the submission package with:
 
 ```bash
-./scripts/package_submission.sh YOURROLLNUMBER
+./scripts/package_submission.sh SE23UCSE186
 ```
 
-This creates `submission/YOURROLLNUMBER.zip` containing the same-named PPTX, PDF, MP4, and a clean source snapshot. Generated dependencies, build output, credentials, Git history, and temporary files are excluded.
+This creates `submission/SE23UCSE186.zip` containing the same-named PPTX, PDF, MP4, and a clean source snapshot. Generated dependencies, build output, credentials, Git history, and temporary files are excluded.
