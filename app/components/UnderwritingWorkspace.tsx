@@ -26,7 +26,7 @@ import {
   X,
   XCircle,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   assessApplication,
   type AssessmentRequest,
@@ -36,6 +36,7 @@ import {
 
 type View = "decision" | "queue" | "monitoring" | "audit";
 type PresetKey = "strong" | "borderline" | "fraud";
+type QueueFilter = "all" | "review" | "fraud" | "approved";
 
 const PRESETS: Record<PresetKey, AssessmentRequest> = {
   strong: {
@@ -160,6 +161,12 @@ function scoreClass(value: Recommendation) {
   return value.toLowerCase();
 }
 
+async function sha256(value: string) {
+  const bytes = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 function StatusIcon({ status }: { status: "PASS" | "REVIEW" | "FAIL" }) {
   if (status === "PASS") return <CheckCircle2 aria-hidden="true" />;
   if (status === "FAIL") return <XCircle aria-hidden="true" />;
@@ -186,6 +193,11 @@ export function UnderwritingWorkspace() {
   const [form, setForm] = useState<AssessmentRequest>(PRESETS.borderline);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadNotifications, setUnreadNotifications] = useState(2);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const auditEvents = useMemo(() => [
     { time: "09:42:00", event: "Decision created", actor: "Decision API", reference: current.decisionId },
@@ -194,6 +206,29 @@ export function UnderwritingWorkspace() {
     { time: "09:41:58", event: "Alternative-data consent verified", actor: "Consent service", reference: "CONSENT-VALID" },
     { time: "09:41:57", event: "Application received", actor: "Underwriter demo", reference: current.applicant.externalId },
   ], [current]);
+
+  const searchResults = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return [];
+    return queue.filter((decision) => [
+      decision.decisionId,
+      decision.applicant.externalId,
+      decision.applicant.fullName,
+    ].some((value) => value.toLowerCase().includes(query))).slice(0, 5);
+  }, [queue, searchQuery]);
+
+  useEffect(() => {
+    function focusSearch(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      const isEditing = target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable;
+      if (event.key === "/" && !isEditing) {
+        event.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    }
+    window.addEventListener("keydown", focusSearch);
+    return () => window.removeEventListener("keydown", focusSearch);
+  }, []);
 
   function choosePreset(key: PresetKey) {
     setPreset(key);
@@ -242,6 +277,8 @@ export function UnderwritingWorkspace() {
     setCurrent(decision);
     setActiveView("decision");
     setShowExplanation(true);
+    setSearchQuery("");
+    setShowSearchResults(false);
   }
 
   return (
@@ -257,6 +294,7 @@ export function UnderwritingWorkspace() {
               className={`nav-item ${activeView === id ? "active" : ""}`}
               key={id}
               type="button"
+              aria-label={label}
               onClick={() => setActiveView(id)}
             >
               <Icon aria-hidden="true" />
@@ -277,9 +315,56 @@ export function UnderwritingWorkspace() {
 
       <section className="main-panel">
         <header className="global-bar">
-          <div className="global-search"><Search aria-hidden="true" /><span>Search application ID</span><kbd>/</kbd></div>
+          <div className="global-search">
+            <Search aria-hidden="true" />
+            <input
+              ref={searchInputRef}
+              aria-label="Search applications"
+              placeholder="Search application ID or applicant"
+              value={searchQuery}
+              onFocus={() => setShowSearchResults(true)}
+              onChange={(event) => {
+                setSearchQuery(event.target.value);
+                setShowSearchResults(true);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && searchResults[0]) openDecision(searchResults[0]);
+                if (event.key === "Escape") setShowSearchResults(false);
+              }}
+            />
+            <kbd>/</kbd>
+            {showSearchResults && searchQuery.trim() && (
+              <div className="search-results" role="listbox" aria-label="Matching applications">
+                {searchResults.length > 0 ? searchResults.map((decision) => (
+                  <button key={`${decision.decisionId}-${decision.createdAt}`} type="button" onClick={() => openDecision(decision)}>
+                    <span><strong>{decision.decisionId}</strong><small>{decision.applicant.fullName}</small></span>
+                    <span className={`decision-badge ${scoreClass(decision.recommendation)}`}>{decision.recommendation}</span>
+                  </button>
+                )) : <p>No matching applications</p>}
+              </div>
+            )}
+          </div>
           <div className="global-actions">
-            <button className="icon-button" type="button" title="Notifications" aria-label="Notifications"><Bell aria-hidden="true" /></button>
+            <div className="notification-wrap">
+              <button
+                className="icon-button"
+                type="button"
+                title="Notifications"
+                aria-label={`Notifications, ${unreadNotifications} unread`}
+                aria-expanded={showNotifications}
+                onClick={() => setShowNotifications((visible) => !visible)}
+              >
+                <Bell aria-hidden="true" />
+                {unreadNotifications > 0 && <span className="notification-badge">{unreadNotifications}</span>}
+              </button>
+              {showNotifications && (
+                <section className="notification-panel" aria-label="Notifications">
+                  <header><strong>Notifications</strong><button type="button" onClick={() => setUnreadNotifications(0)}>Mark all read</button></header>
+                  <div><span className="notice-dot amber" /><p><strong>1 application needs review</strong><small>Priya Nair is within the 15-minute SLA.</small></p></div>
+                  <div><span className="notice-dot green" /><p><strong>Model checks completed</strong><small>Drift and fairness indicators remain within thresholds.</small></p></div>
+                </section>
+              )}
+            </div>
             <span className="environment"><span /> SANDBOX</span>
           </div>
         </header>
@@ -294,7 +379,7 @@ export function UnderwritingWorkspace() {
         )}
         {activeView === "queue" && <QueueView queue={queue} onOpen={openDecision} />}
         {activeView === "monitoring" && <MonitoringView />}
-        {activeView === "audit" && <AuditView events={auditEvents} />}
+        {activeView === "audit" && <AuditView events={auditEvents} decision={current} />}
       </section>
 
       {showForm && (
@@ -472,9 +557,33 @@ function DecisionView({ decision, showExplanation, onToggleExplanation, onNew }:
 }
 
 function QueueView({ queue, onOpen }: { queue: DecisionResponse[]; onOpen: (decision: DecisionResponse) => void }) {
+  const [showFilters, setShowFilters] = useState(false);
+  const [filter, setFilter] = useState<QueueFilter>("all");
+  const filteredQueue = queue.filter((decision) => {
+    if (filter === "review") return decision.recommendation === "REVIEW";
+    if (filter === "fraud") return decision.fraudRisk >= 65;
+    if (filter === "approved") return decision.recommendation === "APPROVE";
+    return true;
+  });
+
+  const filterOptions: Array<{ id: QueueFilter; label: string }> = [
+    { id: "all", label: "All applications" },
+    { id: "review", label: "Human review" },
+    { id: "fraud", label: "High fraud" },
+    { id: "approved", label: "Approved" },
+  ];
+
   return (
     <div className="view-wrap">
-      <PageHeading eyebrow="OPERATIONS" title="Review queue" copy="Prioritized cases that need a human decision or verification." action={<button className="secondary-button compact" type="button"><SlidersHorizontal aria-hidden="true" /> Filters</button>} />
+      <PageHeading eyebrow="OPERATIONS" title="Review queue" copy="Prioritized cases that need a human decision or verification." action={<button className="secondary-button compact" type="button" aria-expanded={showFilters} onClick={() => setShowFilters((visible) => !visible)}><SlidersHorizontal aria-hidden="true" /> Filters{filter !== "all" && <span className="filter-count">1</span>}</button>} />
+      {showFilters && (
+        <section className="filter-panel" aria-label="Queue filters">
+          <div><strong>Show cases</strong><span>{filteredQueue.length} matching applications</span></div>
+          <div className="filter-options">
+            {filterOptions.map((option) => <button className={filter === option.id ? "selected" : ""} type="button" key={option.id} onClick={() => setFilter(option.id)}>{option.label}</button>)}
+          </div>
+        </section>
+      )}
       <div className="queue-summary">
         <Metric label="Awaiting review" value={String(queue.filter((item) => item.recommendation === "REVIEW").length)} detail="Within 15-minute SLA" />
         <Metric label="High fraud risk" value={String(queue.filter((item) => item.fraudRisk >= 65).length)} detail="Identity verification required" />
@@ -487,7 +596,7 @@ function QueueView({ queue, onOpen }: { queue: DecisionResponse[]; onOpen: (deci
           <table>
             <thead><tr><th>Application</th><th>Applicant</th><th>Requested</th><th>Credit</th><th>Fraud</th><th>Recommendation</th><th><span className="sr-only">Open</span></th></tr></thead>
             <tbody>
-              {queue.map((decision) => (
+              {filteredQueue.map((decision) => (
                 <tr key={`${decision.decisionId}-${decision.createdAt}`}>
                   <td><strong>{decision.decisionId}</strong><small>{new Date(decision.createdAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</small></td>
                   <td><strong>{decision.applicant.fullName}</strong><small>{decision.applicant.externalId}</small></td>
@@ -498,6 +607,7 @@ function QueueView({ queue, onOpen }: { queue: DecisionResponse[]; onOpen: (deci
                   <td><button className="icon-button" type="button" title="Open decision" aria-label={`Open ${decision.decisionId}`} onClick={() => onOpen(decision)}><ChevronRight aria-hidden="true" /></button></td>
                 </tr>
               ))}
+              {filteredQueue.length === 0 && <tr><td className="empty-table" colSpan={7}>No applications match this filter.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -507,6 +617,7 @@ function QueueView({ queue, onOpen }: { queue: DecisionResponse[]; onOpen: (deci
 }
 
 function MonitoringView() {
+  const [showModelCard, setShowModelCard] = useState(false);
   const drift = [
     ["Income stability", 18, "Stable"],
     ["Utility on-time ratio", 31, "Watch"],
@@ -544,15 +655,83 @@ function MonitoringView() {
           ].map(([title, detail]) => <div className="control-row" key={title}><Check aria-hidden="true" /><p><strong>{title}</strong><span>{detail}</span></p></div>)}
         </section>
       </div>
-      <div className="model-card-strip"><FileCheck2 aria-hidden="true" /><p><strong>Model card available</strong><span>Training assumptions, intended use, limitations, subgroup evaluation, and rollback criteria are versioned with the model artifact.</span></p><button type="button">View model card <ChevronRight aria-hidden="true" /></button></div>
+      <div className="model-card-strip"><FileCheck2 aria-hidden="true" /><p><strong>Model card available</strong><span>Training assumptions, intended use, limitations, subgroup evaluation, and rollback criteria are versioned with the model artifact.</span></p><button type="button" onClick={() => setShowModelCard(true)}>View model card <ChevronRight aria-hidden="true" /></button></div>
+      {showModelCard && (
+        <div className="modal-backdrop" role="presentation" onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setShowModelCard(false);
+        }}>
+          <section className="application-modal model-card-modal" role="dialog" aria-modal="true" aria-labelledby="model-card-title">
+            <header>
+              <div><p className="eyebrow">MODEL GOVERNANCE</p><h2 id="model-card-title">Model card</h2></div>
+              <button className="icon-button" type="button" title="Close" aria-label="Close model card" onClick={() => setShowModelCard(false)}><X aria-hidden="true" /></button>
+            </header>
+            <div className="model-card-body">
+              <div className="model-card-summary"><div><span>Version</span><strong>credit-logit-1.0.0</strong></div><div><span>Model type</span><strong>Regularized logistic regression</strong></div><div><span>Validation</span><strong>2,000 synthetic profiles</strong></div></div>
+              <section><h3>Intended use</h3><p>Prototype ranking and explanation of consented new-to-credit applications. It supports policy and human review; it does not make autonomous lending decisions.</p></section>
+              <section><h3>Validation results</h3><dl><div><dt>ROC-AUC</dt><dd>0.8344</dd></div><div><dt>Precision</dt><dd>0.5959</dd></div><div><dt>Recall</dt><dd>0.6008</dd></div><div><dt>Equal opportunity gap</dt><dd>0.0166</dd></div></dl></section>
+              <section><h3>Data and exclusions</h3><p>Uses normalized financial and behavioral aggregates. Gender, religion, caste, precise location, contact contents, messages, and social-media content are excluded.</p></section>
+              <section className="model-limitations"><h3>Prototype limitations</h3><p>Synthetic validation does not establish real-world creditworthiness, fairness, calibration, or regulatory compliance. Representative consented data, legal review, independent validation, and monitored rollout are required before real use.</p></section>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }
 
-function AuditView({ events }: { events: Array<{ time: string; event: string; actor: string; reference: string }> }) {
+function AuditView({ events, decision }: {
+  events: Array<{ time: string; event: string; actor: string; reference: string }>;
+  decision: DecisionResponse;
+}) {
+  const [exportUrl, setExportUrl] = useState("");
+  const [exported, setExported] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    let objectUrl = "";
+    async function prepareAuditRecord() {
+      let previousHash = "GENESIS";
+      const chain = [];
+      for (const event of [...events].reverse()) {
+        const record = { date: "2026-08-20", ...event, previousHash };
+        const hash = await sha256(JSON.stringify(record));
+        chain.push({ ...record, hash });
+        previousHash = hash;
+      }
+      const payload = {
+        schemaVersion: "1.0",
+        exportedAt: new Date().toISOString(),
+        decision: {
+          decisionId: decision.decisionId,
+          applicantReference: decision.applicant.externalId,
+          recommendation: decision.recommendation,
+          creditConfidence: decision.creditConfidence,
+          fraudRisk: decision.fraudRisk,
+          modelVersion: decision.modelVersion,
+        },
+        verification: { algorithm: "SHA-256", chainVerified: true, headHash: previousHash },
+        events: chain,
+      };
+      objectUrl = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }));
+      if (active) setExportUrl(objectUrl);
+    }
+    prepareAuditRecord();
+    return () => {
+      active = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [decision, events]);
+
   return (
     <div className="view-wrap">
-      <PageHeading eyebrow="COMPLIANCE" title="Audit trail" copy="Immutable evidence for every data, model, policy, and human action." action={<button className="secondary-button compact" type="button"><FileText aria-hidden="true" /> Export record</button>} />
+      <PageHeading eyebrow="COMPLIANCE" title="Audit trail" copy="Immutable evidence for every data, model, policy, and human action." action={<a className="secondary-button compact" href={exportUrl || undefined} download={`${decision.decisionId}-audit-record.json`} aria-disabled={!exportUrl} onClick={(event) => {
+        if (!exportUrl) {
+          event.preventDefault();
+          return;
+        }
+        setExported(true);
+        window.setTimeout(() => setExported(false), 1800);
+      }}><FileText aria-hidden="true" /> {!exportUrl ? "Preparing export" : exported ? "Exported" : "Export record"}</a>} />
       <div className="audit-banner"><LockKeyhole aria-hidden="true" /><p><strong>Tamper-evident event chain</strong><span>Each event stores a timestamp, actor, version reference, and hash of the previous event.</span></p><span>CHAIN VERIFIED</span></div>
       <section className="timeline" aria-label="Decision audit events">
         {events.map((event, index) => (

@@ -136,6 +136,8 @@ submission/   Final roll-number-named delivery files
 
 ## Demo flow
 
+**[Open the live interface demo](https://vinay-113.github.io/credintel-ai/)**
+
 **[Watch or download the 59-second narrated product demo](docs/demo/credintel-demo.mp4)**
 
 1. Show the strong profile and open the feature-level explanation.

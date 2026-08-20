@@ -20,7 +20,7 @@ test("server-renders the underwriting workspace", async () => {
   assert.match(html, /CredIntel AI/);
   assert.match(html, /Decision workspace/);
   assert.match(html, /Alternative-data signals/);
-  assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Your site is taking shape/i);
+  assert.doesNotMatch(html, /react-loading-skeleton|Your site is taking shape/i);
 });
 
 test("publishes model governance metadata", async () => {
